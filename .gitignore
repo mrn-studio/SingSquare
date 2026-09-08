@@ -1,6 +1,6 @@
 .build/
 .DS_Store
 *.xcodeproj
-LyricsWidget.app/
-LyricsWidget.iconset/
+SingSquare.app/
+SingSquare.iconset/
 *.swp

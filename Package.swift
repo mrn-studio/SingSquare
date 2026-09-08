@@ -2,9 +2,9 @@
 import PackageDescription
 
 let package = Package(
-    name: "LyricsWidget",
+    name: "SingSquare",
     platforms: [.macOS(.v15)],
     targets: [
-        .executableTarget(name: "LyricsWidget", path: "Sources/LyricsWidget")
+        .executableTarget(name: "SingSquare", path: "Sources/SingSquare")
     ]
 )

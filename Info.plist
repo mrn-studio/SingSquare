@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>LyricsWidget</string>
+    <string>Sing Square</string>
     <key>CFBundleDisplayName</key>
-    <string>Lyrics Widget</string>
+    <string>Sing Square</string>
     <key>CFBundleIdentifier</key>
-    <string>com.marin.lyricswidget</string>
+    <string>com.marin.singsquare</string>
     <key>CFBundleExecutable</key>
-    <string>LyricsWidget</string>
+    <string>SingSquare</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
@@ -23,6 +23,6 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSAppleEventsUsageDescription</key>
-    <string>LyricsWidget reads the currently playing track and playback position from Spotify.</string>
+    <string>Sing Square reads the currently playing track and playback position from Spotify.</string>
 </dict>
 </plist>

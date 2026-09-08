@@ -6,11 +6,11 @@ struct Entry {
     static func main() {
         if CommandLine.arguments.contains("--selftest") { selftest(); return }
         if CommandLine.arguments.contains("--poll") { print(Spotify.debugRaw()); return }
-        LyricsWidgetApp.main()
+        SingSquareApp.main()
     }
 }
 
-struct LyricsWidgetApp: App {
+struct SingSquareApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
     var body: some Scene {

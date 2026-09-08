@@ -58,7 +58,7 @@ enum Lyrics {
     private static func request<T: Decodable>(_ url: URL?, decode: T.Type) async -> T? {
         guard let url else { return nil }
         var req = URLRequest(url: url)
-        req.setValue("LyricsWidget/0.1 (local dev)", forHTTPHeaderField: "User-Agent")
+        req.setValue("SingSquare/0.1 (local dev)", forHTTPHeaderField: "User-Agent")
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)

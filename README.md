@@ -1,4 +1,4 @@
-# LyricsWidget
+# Sing Square
 
 A small, glassy macOS widget that shows synced lyrics for whatever's playing in Spotify.
 
@@ -16,14 +16,14 @@ A small, glassy macOS widget that shows synced lyrics for whatever's playing in 
 ## Run
 
 ```sh
-swift run LyricsWidget
+swift run SingSquare
 ```
 
 ## Build a double-clickable app
 
 ```sh
 ./pack.sh
-open LyricsWidget.app
+open SingSquare.app
 ```
 
 First launch, approve the "control Spotify" prompt.
@@ -32,7 +32,7 @@ First launch, approve the "control Spotify" prompt.
 
 | File | What |
 |---|---|
-| `Sources/LyricsWidget/Spotify.swift` | AppleScript poll + canonical metadata lookup |
-| `Sources/LyricsWidget/Lyrics.swift` | lrclib fetch + LRC parser |
-| `Sources/LyricsWidget/App.swift` | app, polling model, SwiftUI view |
+| `Sources/SingSquare/Spotify.swift` | AppleScript poll + canonical metadata lookup |
+| `Sources/SingSquare/Lyrics.swift` | lrclib fetch + LRC parser |
+| `Sources/SingSquare/App.swift` | app, polling model, SwiftUI view |
 | `makeicon.swift` | regenerates `AppIcon.icns` |

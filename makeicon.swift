@@ -1,5 +1,5 @@
 // Renders the app icon (green-accent variant from icon-refined-variants.svg)
-// into LyricsWidget.iconset/ and builds AppIcon.icns.
+// into SingSquare.iconset/ and builds AppIcon.icns.
 // Run: swift makeicon.swift
 import AppKit
 
@@ -37,7 +37,7 @@ func png(_ px: Int) -> Data {
     return NSBitmapImageRep(cgImage: ctx.makeImage()!).representation(using: .png, properties: [:])!
 }
 
-let dir = "LyricsWidget.iconset"
+let dir = "SingSquare.iconset"
 try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
 for (name, px) in [("16x16", 16), ("16x16@2x", 32), ("32x32", 32), ("32x32@2x", 64),
                    ("128x128", 128), ("128x128@2x", 256), ("256x256", 256),
