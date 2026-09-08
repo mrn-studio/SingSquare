@@ -5,6 +5,7 @@ import AppKit
 struct Entry {
     static func main() {
         if CommandLine.arguments.contains("--selftest") { selftest(); return }
+        if CommandLine.arguments.contains("--poll") { print(Spotify.debugRaw()); return }
         LyricsWidgetApp.main()
     }
 }
@@ -34,6 +35,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @MainActor
 final class Model: ObservableObject {
     @Published var np: NowPlaying?
+    @Published var title = "—"
+    @Published var artist = ""
     @Published var lines: [LyricLine] = []
     @Published var currentIndex: Int?
     @Published var status = "Waiting for Spotify…"
@@ -66,9 +69,15 @@ final class Model: ObservableObject {
         if poll.trackID != loadedTrackID {
             loadedTrackID = poll.trackID
             lines = []; currentIndex = nil
+            title = poll.title; artist = poll.artist
             status = "Loading lyrics…"
             Task {
-                let fetched = await Lyrics.fetch(poll)
+                let meta = await Spotify.canonicalMeta(trackID: poll.trackID)
+                guard loadedTrackID == poll.trackID else { return }
+                let t = meta?.title ?? poll.title
+                let a = meta?.artist ?? poll.artist
+                title = t; artist = a
+                let fetched = await Lyrics.fetch(title: t, artist: a, duration: poll.duration)
                 guard loadedTrackID == poll.trackID else { return }
                 lines = fetched
                 status = fetched.isEmpty ? "No lyrics found" : ""
@@ -126,8 +135,8 @@ struct ContentView: View {
 
     private var header: some View {
         VStack(spacing: 2) {
-            Text(model.np?.title ?? "—").font(.headline).lineLimit(1)
-            Text(model.np?.artist ?? " ").font(.subheadline)
+            Text(model.title).font(.headline).lineLimit(1)
+            Text(model.artist.isEmpty ? " " : model.artist).font(.subheadline)
                 .foregroundStyle(.white.opacity(0.5)).lineLimit(1)
         }
         .frame(maxWidth: .infinity)

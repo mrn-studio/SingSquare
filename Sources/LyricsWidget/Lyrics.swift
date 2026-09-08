@@ -8,34 +8,60 @@ struct LyricLine: Identifiable {
 
 /// Free synced-lyrics source: https://lrclib.net (no auth).
 enum Lyrics {
-    private struct Response: Decodable {
+    private struct Track: Decodable {
         let syncedLyrics: String?
         let plainLyrics: String?
+        let duration: Double?
     }
 
-    static func fetch(_ np: NowPlaying) async -> [LyricLine] {
-        var c = URLComponents(string: "https://lrclib.net/api/get")!
-        c.queryItems = [
-            .init(name: "artist_name", value: np.artist),
-            .init(name: "track_name", value: np.title),
-            .init(name: "album_name", value: np.album),
-            .init(name: "duration", value: String(Int(np.duration.rounded()))),
-        ]
-        guard let url = c.url else { return [] }
-        var req = URLRequest(url: url)
-        req.setValue("LyricsWidget/0.1 (local dev)", forHTTPHeaderField: "User-Agent")
+    static func fetch(title: String, artist: String, duration: Double) async -> [LyricLine] {
+        if let t = await get(title: title, artist: artist, duration: duration) { return lines(from: t) }
+        if let t = await search(title: title, artist: artist, duration: duration) { return lines(from: t) }
+        return []
+    }
 
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
-              (resp as? HTTPURLResponse)?.statusCode == 200,
-              let r = try? JSONDecoder().decode(Response.self, from: data)
-        else { return [] }
-
-        if let synced = r.syncedLyrics, !synced.isEmpty { return parseLRC(synced) }
-        if let plain = r.plainLyrics, !plain.isEmpty {
-            return plain.split(separator: "\n", omittingEmptySubsequences: false)
+    private static func lines(from t: Track) -> [LyricLine] {
+        if let s = t.syncedLyrics, !s.isEmpty { return parseLRC(s) }
+        if let p = t.plainLyrics, !p.isEmpty {
+            return p.split(separator: "\n", omittingEmptySubsequences: false)
                 .map { LyricLine(time: -1, text: String($0)) }
         }
         return []
+    }
+
+    private static func get(title: String, artist: String, duration: Double) async -> Track? {
+        var c = URLComponents(string: "https://lrclib.net/api/get")!
+        c.queryItems = [
+            .init(name: "artist_name", value: artist),
+            .init(name: "track_name", value: title),
+            .init(name: "duration", value: String(Int(duration.rounded()))),
+        ]
+        return await request(c.url, decode: Track.self)
+    }
+
+    /// Fallback: search by artist+title, pick the closest duration, prefer synced.
+    private static func search(title: String, artist: String, duration: Double) async -> Track? {
+        var c = URLComponents(string: "https://lrclib.net/api/search")!
+        c.queryItems = [
+            .init(name: "artist_name", value: artist),
+            .init(name: "track_name", value: title),
+        ]
+        guard let results = await request(c.url, decode: [Track].self), !results.isEmpty else { return nil }
+        return results.min { a, b in
+            let key: (Track) -> (Int, Double) = {
+                ($0.syncedLyrics?.isEmpty == false ? 0 : 1, abs(($0.duration ?? 0) - duration))
+            }
+            return key(a) < key(b)
+        }
+    }
+
+    private static func request<T: Decodable>(_ url: URL?, decode: T.Type) async -> T? {
+        guard let url else { return nil }
+        var req = URLRequest(url: url)
+        req.setValue("LyricsWidget/0.1 (local dev)", forHTTPHeaderField: "User-Agent")
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+        return try? JSONDecoder().decode(T.self, from: data)
     }
 
     /// `[mm:ss.xx] text`, possibly several timestamps on one line.
