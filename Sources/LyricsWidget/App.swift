@@ -141,25 +141,24 @@ struct ContentView: View {
     }
 
     private var header: some View {
-        HStack {
-            Color.clear.frame(width: 22)
-            VStack(spacing: 2) {
-                Text(model.title).font(.headline).lineLimit(1)
-                Text(model.artist.isEmpty ? " " : model.artist).font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.5)).lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
+        VStack(spacing: 2) {
+            Text(model.title).font(.headline).lineLimit(1)
+            Text(model.artist.isEmpty ? " " : model.artist).font(.subheadline)
+                .foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 34)
+        .overlay(alignment: .trailing) {
             Button { alwaysOnTop.toggle() } label: {
                 Image(systemName: alwaysOnTop ? "pin.fill" : "pin")
                     .font(.system(size: 13))
                     .foregroundStyle(.white.opacity(alwaysOnTop ? 0.9 : 0.35))
-                    .frame(width: 22)
             }
             .buttonStyle(.plain)
+            .padding(.trailing, 12)
             .help("Keep window on top")
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 12)
     }
 
     @ViewBuilder
