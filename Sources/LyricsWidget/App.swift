@@ -140,7 +140,7 @@ struct ContentView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: userScrolling)
-            .background(GlassBackground().ignoresSafeArea())
+            .background(GlassBackground().overlay(Color.black.opacity(0.34)).ignoresSafeArea())
             .foregroundStyle(.white)
             .onAppear { model.start(); configureWindow() }
             .onChange(of: alwaysOnTop) { _, _ in configureWindow() }
