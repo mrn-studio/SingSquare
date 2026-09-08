@@ -3,3 +3,4 @@
 *.xcodeproj
 LyricsWidget.app/
 LyricsWidget.iconset/
+*.swp
