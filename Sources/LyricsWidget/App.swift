@@ -30,6 +30,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ s: NSApplication) -> Bool { true }
 }
 
+/// Native behind-window blur (the "glass" look).
+struct GlassBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let v = NSVisualEffectView()
+        v.material = .hudWindow
+        v.blendingMode = .behindWindow
+        v.state = .active
+        return v
+    }
+    func updateNSView(_ v: NSVisualEffectView, context: Context) {}
+}
+
 // MARK: - Model
 
 @MainActor
@@ -106,7 +118,7 @@ struct ContentView: View {
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
                     header
-                    Divider().opacity(0.12)
+                    Divider().opacity(0.08)
                     lyrics(proxy)
                 }
                 if userScrolling {
@@ -128,24 +140,31 @@ struct ContentView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: userScrolling)
-            .background(Color.black)
+            .background(GlassBackground().ignoresSafeArea())
             .foregroundStyle(.white)
-            .onAppear { model.start(); applyWindowLevel() }
-            .onChange(of: alwaysOnTop) { _, _ in applyWindowLevel() }
+            .onAppear { model.start(); configureWindow() }
+            .onChange(of: alwaysOnTop) { _, _ in configureWindow() }
         }
     }
 
-    private func applyWindowLevel() {
-        let level: NSWindow.Level = alwaysOnTop ? .floating : .normal
-        DispatchQueue.main.async { NSApp.windows.forEach { $0.level = level } }
+    private func configureWindow() {
+        DispatchQueue.main.async {
+            for w in NSApp.windows {
+                w.level = alwaysOnTop ? .floating : .normal
+                w.isOpaque = false
+                w.backgroundColor = .clear
+                w.isMovableByWindowBackground = true
+            }
+        }
     }
 
     private var header: some View {
         VStack(spacing: 2) {
             Text(model.title).font(.headline).lineLimit(1)
             Text(model.artist.isEmpty ? " " : model.artist).font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+                .foregroundStyle(.white.opacity(0.6)).lineLimit(1)
         }
+        .shadow(color: .black.opacity(0.4), radius: 3, y: 1)
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
         .padding(.horizontal, 34)
@@ -176,7 +195,8 @@ struct ContentView: View {
                     ForEach(Array(model.lines.enumerated()), id: \.element.id) { i, line in
                         Text(line.text.isEmpty ? "♪" : line.text)
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(i == model.currentIndex ? .white : .white.opacity(0.3))
+                            .foregroundStyle(i == model.currentIndex ? .white : .white.opacity(0.45))
+                            .shadow(color: .black.opacity(i == model.currentIndex ? 0.5 : 0.35), radius: 4, y: 1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .id(i)
                     }
