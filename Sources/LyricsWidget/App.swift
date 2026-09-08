@@ -99,6 +99,7 @@ final class Model: ObservableObject {
 struct ContentView: View {
     @StateObject private var model = Model()
     @State private var userScrolling = false
+    @AppStorage("alwaysOnTop") private var alwaysOnTop = false
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -115,7 +116,7 @@ struct ContentView: View {
                             withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo(i, anchor: .center) }
                         }
                     } label: {
-                        Label("Sync", systemImage: "arrow.down.to.line")
+                        Label("Sync", systemImage: "music.mic")
                             .font(.system(size: 13, weight: .semibold))
                             .padding(.horizontal, 16).padding(.vertical, 8)
                             .background(.white, in: Capsule())
@@ -129,17 +130,35 @@ struct ContentView: View {
             .animation(.easeInOut(duration: 0.2), value: userScrolling)
             .background(Color.black)
             .foregroundStyle(.white)
-            .onAppear { model.start() }
+            .onAppear { model.start(); applyWindowLevel() }
+            .onChange(of: alwaysOnTop) { _, _ in applyWindowLevel() }
         }
     }
 
+    private func applyWindowLevel() {
+        let level: NSWindow.Level = alwaysOnTop ? .floating : .normal
+        DispatchQueue.main.async { NSApp.windows.forEach { $0.level = level } }
+    }
+
     private var header: some View {
-        VStack(spacing: 2) {
-            Text(model.title).font(.headline).lineLimit(1)
-            Text(model.artist.isEmpty ? " " : model.artist).font(.subheadline)
-                .foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+        HStack {
+            Color.clear.frame(width: 22)
+            VStack(spacing: 2) {
+                Text(model.title).font(.headline).lineLimit(1)
+                Text(model.artist.isEmpty ? " " : model.artist).font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.5)).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            Button { alwaysOnTop.toggle() } label: {
+                Image(systemName: alwaysOnTop ? "pin.fill" : "pin")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(alwaysOnTop ? 0.9 : 0.35))
+                    .frame(width: 22)
+            }
+            .buttonStyle(.plain)
+            .help("Keep window on top")
         }
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 10)
         .padding(.vertical, 12)
     }
 
