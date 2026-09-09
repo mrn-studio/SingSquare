@@ -14,7 +14,12 @@ enum Lyrics {
         let duration: Double?
     }
 
-    static func fetch(title: String, artist: String, duration: Double) async -> [LyricLine] {
+    static func fetch(title rawTitle: String, artist: String, duration: Double) async -> [LyricLine] {
+        // Some catalog titles bundle an alternate-language subtitle after a slash
+        // (e.g. "Boyfriend -partII-/原題:What Made You Love Me"), which pollutes
+        // lrclib's search enough to return zero results. Query with it stripped.
+        let title = rawTitle.split(separator: "/", maxSplits: 1).first
+            .map { $0.trimmingCharacters(in: .whitespaces) } ?? rawTitle
         let direct = await get(title: title, artist: artist, duration: duration)
         // Prefer the exact-match result only when it's synced; a plain-only exact
         // match can shadow a synced version that `search` would have ranked higher.
