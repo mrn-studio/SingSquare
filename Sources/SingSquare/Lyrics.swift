@@ -14,19 +14,31 @@ enum Lyrics {
         let duration: Double?
     }
 
+    /// Some catalog titles bundle an alternate-language subtitle after a slash
+    /// (e.g. "Boyfriend -partⅡ-／原題：What Makes Me Fall In Love"), using
+    /// full-width punctuation and Roman-numeral glyphs that don't string-match
+    /// lrclib's ASCII-titled entries. NFKC folds those to ASCII ("／"→"/",
+    /// "Ⅱ"→"II") so the slash-split below and the search both work.
+    static func queryTitle(_ raw: String) -> String {
+        let normalized = raw.precomposedStringWithCompatibilityMapping
+        return normalized.split(separator: "/", maxSplits: 1).first
+            .map { $0.trimmingCharacters(in: .whitespaces) } ?? normalized
+    }
+
+    /// Prefer a synced result; an unsynced exact match must not shadow a synced
+    /// one `search` would have found.
+    private static func choose(direct: Track?, searched: Track?) -> Track? {
+        if let d = direct, d.syncedLyrics?.isEmpty == false { return d }
+        return searched ?? direct
+    }
+
     static func fetch(title rawTitle: String, artist: String, duration: Double) async -> [LyricLine] {
-        // Some catalog titles bundle an alternate-language subtitle after a slash
-        // (e.g. "Boyfriend -partII-/原題:What Made You Love Me"), which pollutes
-        // lrclib's search enough to return zero results. Query with it stripped.
-        let title = rawTitle.split(separator: "/", maxSplits: 1).first
-            .map { $0.trimmingCharacters(in: .whitespaces) } ?? rawTitle
+        let title = queryTitle(rawTitle)
         let direct = await get(title: title, artist: artist, duration: duration)
-        // Prefer the exact-match result only when it's synced; a plain-only exact
-        // match can shadow a synced version that `search` would have ranked higher.
-        if let t = direct, t.syncedLyrics?.isEmpty == false { return lines(from: t) }
-        if let t = await search(title: title, artist: artist, duration: duration) { return lines(from: t) }
-        if let t = direct { return lines(from: t) }
-        return []
+        let needsSearch = direct?.syncedLyrics?.isEmpty ?? true
+        let searched = needsSearch ? await search(title: title, artist: artist, duration: duration) : nil
+        guard let t = choose(direct: direct, searched: searched) else { return [] }
+        return lines(from: t)
     }
 
     private static func lines(from t: Track) -> [LyricLine] {
@@ -103,5 +115,27 @@ enum Lyrics {
             }
         }
         return lines.sorted { $0.time < $1.time }
+    }
+
+    /// Regression coverage for three real lrclib data quirks hit in production.
+    static func selftest() {
+        // 1) lrclib sometimes mislabels synced content as "plainLyrics".
+        let mislabeled = Track(syncedLyrics: nil, plainLyrics: "[00:01.00]hi\n[00:02.00]bye", duration: nil)
+        let ml = lines(from: mislabeled)
+        assert(ml.map(\.time) == [1.0, 2.0], "mislabeled plain-as-synced lyrics not parsed")
+
+        // 2) an unsynced exact ("get") match must not shadow a synced "search" hit.
+        let unsyncedDirect = Track(syncedLyrics: nil, plainLyrics: "plain only", duration: nil)
+        let syncedSearch = Track(syncedLyrics: "[00:05.00]synced", plainLyrics: nil, duration: nil)
+        assert(choose(direct: unsyncedDirect, searched: syncedSearch)?.syncedLyrics != nil,
+               "unsynced exact match shadowed a synced search result")
+        assert(choose(direct: nil, searched: nil) == nil)
+
+        // 3) full-width punctuation / Roman numerals must fold to ASCII, and a
+        //    slash-appended subtitle must be dropped, before querying lrclib.
+        assert(queryTitle("Boyfriend -partⅡ-／原題：What Makes Me Fall In Love") == "Boyfriend -partII-",
+               "full-width title not normalized")
+
+        print("Lyrics.selftest ok")
     }
 }

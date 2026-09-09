@@ -233,4 +233,6 @@ func selftest() {
     assert(abs(lines[3].time - 70.25) < 0.001, "got \(lines[3].time)")
     assert(lines.map(\.time) == lines.map(\.time).sorted(), "not sorted")
     print("selftest ok")
+
+    Lyrics.selftest()
 }
