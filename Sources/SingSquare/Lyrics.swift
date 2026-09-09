@@ -15,14 +15,22 @@ enum Lyrics {
     }
 
     static func fetch(title: String, artist: String, duration: Double) async -> [LyricLine] {
-        if let t = await get(title: title, artist: artist, duration: duration) { return lines(from: t) }
+        let direct = await get(title: title, artist: artist, duration: duration)
+        // Prefer the exact-match result only when it's synced; a plain-only exact
+        // match can shadow a synced version that `search` would have ranked higher.
+        if let t = direct, t.syncedLyrics?.isEmpty == false { return lines(from: t) }
         if let t = await search(title: title, artist: artist, duration: duration) { return lines(from: t) }
+        if let t = direct { return lines(from: t) }
         return []
     }
 
     private static func lines(from t: Track) -> [LyricLine] {
         if let s = t.syncedLyrics, !s.isEmpty { return parseLRC(s) }
         if let p = t.plainLyrics, !p.isEmpty {
+            // Some lrclib entries mislabel synced content as "plain" — try parsing
+            // it as LRC first; only treat as truly unsynced if that finds nothing.
+            let parsed = parseLRC(p)
+            if !parsed.isEmpty { return parsed }
             return p.split(separator: "\n", omittingEmptySubsequences: false)
                 .map { LyricLine(time: -1, text: String($0)) }
         }
